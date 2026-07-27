@@ -1,6 +1,9 @@
 # Claude project instructions
 CLAUDE.md
 
+# Generated PDF exports
+*.pdf
+
 # Local .terraform directories
 .terraform/
 

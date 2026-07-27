@@ -6,6 +6,20 @@
 
 ---
 
+## 0. How to Read This Document
+
+Requirements are tagged with a short ID so any single line can be referenced in review
+(e.g. "I disagree with NFR-9") without quoting it. `§` means "section".
+
+| Prefix | Meaning | Answers |
+|---|---|---|
+| **FR** | Functional Requirement | What the system *does* |
+| **NFR** | Non-Functional Requirement | How well it does it — security, availability, cost, operability |
+| **VS** | Validation Scenario | Exercises that prove a control works |
+| **OQ** | Open Question | Not yet decided |
+
+---
+
 ## 1. Purpose
 
 Deliver a production-shaped AWS platform that runs a containerized workload on Amazon EKS behind an edge security stack, with a managed relational database, under a defined security baseline.
