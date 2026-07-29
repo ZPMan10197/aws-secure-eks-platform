@@ -185,8 +185,8 @@ The platform is complete when all of the following are true:
 | # | Question | Status |
 |---|---|---|
 | OQ-1 | Managed node group vs. Fargate for worker capacity | Open — decide in Architecture |
-| OQ-2 | NAT Gateway vs. NAT instance vs. VPC endpoints only, given cost | Open — decide in Architecture |
-| OQ-3 | Single NAT Gateway vs. one per AZ (cost vs. AZ independence) | Open — decide in Architecture |
+| OQ-2 | NAT Gateway vs. NAT instance vs. VPC endpoints only, given cost | **Closed** — managed NAT Gateway (architecture.md D-4) |
+| OQ-3 | Single NAT Gateway vs. one per AZ (cost vs. AZ independence) | **Closed** — one per AZ (architecture.md §1.3) |
 | OQ-4 | Image registry: ECR with enhanced scanning vs. basic scanning | Open — decide in Architecture |
 | OQ-5 | Image scanning: report findings only, or block deployment of vulnerable images? If blocking, what mechanism enforces it? | Open — decide in Architecture |
 
