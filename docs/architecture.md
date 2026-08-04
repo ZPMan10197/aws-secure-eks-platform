@@ -44,9 +44,34 @@ The following properties of AWS networking drive the subnet and security group d
 
 **Note.** Latency is *not* a justification. Cross-AZ round trips are sub-millisecond and immaterial here.
 
-### 1.4 Not Yet Decided
+### 1.4 Decision Record: Address Space and Subnet Layout
 
-- Subnet layout: CIDR allocation, count per AZ, sizing
+**Decision.** VPC CIDR `10.0.0.0/16`, divided across two Availability Zones:
+
+| Subnet | CIDR | Usable | Contents |
+|---|---|---|---|
+| public-a | `10.0.0.0/24` | 251 | ALB network interfaces, NAT Gateway |
+| public-b | `10.0.1.0/24` | 251 | ALB network interfaces, NAT Gateway |
+| private-a | `10.0.16.0/20` | 4,091 | EKS worker nodes and pods |
+| private-b | `10.0.32.0/20` | 4,091 | EKS worker nodes and pods |
+
+Blocks `10.0.2.0`–`10.0.15.255` and everything above `10.0.48.0` remain unallocated.
+
+**Why private subnets are sized an order of magnitude larger.** The Amazon VPC CNI assigns every pod a routable VPC address from its node's subnet — not an overlay address. Nodes additionally pre-allocate a warm pool of addresses ahead of scheduling, so consumption is driven by instance type rather than by running pod count (an `m5.large` claims roughly 30 addresses on join). A `/24` private subnet would therefore cap the cluster near eight nodes irrespective of workload size.
+
+The failure mode is silent: pods remain in `ContainerCreating` with a CNI address-assignment error. Nothing crashes and the scheduler reports no fault, so the symptom is routinely misdiagnosed as an image pull or runtime problem.
+
+Public subnets stay at `/24` because they hold only load balancer interfaces and NAT Gateways.
+
+**Why gaps are left between allocations.** VPC address space carries no cost, and subnet CIDRs cannot be resized after resources occupy them — correcting an undersized range means rebuilding the VPC. Reserving headroom is free; reclaiming it is not.
+
+**Alignment constraint.** A prefix must begin at a multiple of its own size. `10.0.0.0/20` spans blocks 0–15 and would overlap the public subnets, making `10.0.16.0/20` the first legal start; `10.0.32.0/20` is the next.
+
+**Satisfies** NFR-1, NFR-4.
+
+### 1.5 Not Yet Decided
+
+- Availability Zone selection
 - Which VPC endpoints are added to reduce NAT data processing charges
 
 ---
