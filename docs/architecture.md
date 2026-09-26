@@ -69,9 +69,19 @@ Public subnets stay at `/24` because they hold only load balancer interfaces and
 
 **Satisfies** NFR-1, NFR-4.
 
-### 1.5 Not Yet Decided
+### 1.5 Decision Record: Availability Zone Selection
 
-- Availability Zone selection
+**Decision.** Availability Zones are resolved at plan time from the `aws_availability_zones` data source, filtered to `available`, and the first two are used. AZ names are never hardcoded.
+
+**Rationale.** AWS maps AZ *names* (`us-east-1a`) to physical zones independently per account, so the same name refers to different infrastructure in different accounts. The stable identifier is the AZ ID (`use1-az1`). Hardcoding names therefore produces configuration that is not portable across accounts and silently changes meaning when reused.
+
+Additionally, not every AZ in a region supports every service or instance type — `us-east-1e` has historically lacked EKS and several instance families. Querying available zones avoids a failure class that cannot be predicted from the name itself.
+
+**Satisfies** NFR-1, NFR-23.
+
+### 1.6 Not Yet Decided
+
+- Remote state backend (S3 bucket and lock table must be bootstrapped)
 - Which VPC endpoints are added to reduce NAT data processing charges
 
 ---

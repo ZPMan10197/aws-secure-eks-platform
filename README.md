@@ -40,10 +40,10 @@ Requirements carry stable IDs (`FR-*`, `NFR-*`) so architecture decisions can ci
 | Area | State |
 |---|---|
 | Requirements specification | Complete |
-| Architecture — network | Decided (subnet layout outstanding) |
+| Architecture — network | Decided |
 | Architecture — compute, data, identity, detection | Not started |
 | Threat model | Not started |
-| Terraform | Not started |
+| Terraform | Provider and AZ resolution only; no resources yet |
 | Control validation scenarios | Not started |
 
 ---
