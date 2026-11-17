@@ -1,1 +1,2 @@
 alert_email = "you@example.com"
+operator_cidr = "203.0.113.45/32"

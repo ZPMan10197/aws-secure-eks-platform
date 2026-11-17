@@ -108,13 +108,36 @@ AWS retains responsibility for the control plane; the operator retains responsib
 
 **Satisfies** NFR-4, NFR-9. **Enables** VS-2.
 
-### 2.2 Not Yet Decided
+### 2.2 Decision Record: Control Plane Endpoint Access
+
+**Decision.** Both endpoints enabled. The private endpoint serves in-VPC traffic; the public endpoint is restricted to a single operator address supplied as `var.operator_cidr` (a `/32`). The value is provided through `terraform.tfvars` and is not committed.
+
+**Alternatives considered.**
+
+| Option | Rejected because |
+|---|---|
+| Public only | The API server would accept connections from any source address. Authentication still applies, but the attack surface includes the entire internet for no operational benefit. |
+| Private only | The strongest posture, and the correct choice in production. It requires in-VPC access to operate the cluster — a bastion host, VPN, or SSM port forwarding — each of which adds standing cost and setup time that the NFR-27 ceiling does not justify for a single operator. |
+
+**Rationale.** Worker nodes reach the control plane over the private endpoint and are unaffected by the public setting. The public endpoint exists solely so a single operator can run `kubectl` without standing infrastructure.
+
+**Known weaknesses, stated rather than implied.**
+
+- The operator address is residential and dynamic. When it changes the allowlist fails closed, and the tempting remedy is widening the range. Production resolves this with a static egress address or a VPN, not a wider allowlist.
+- A CIDR allowlist is a filter, not an authentication control. It reduces exposure; it is not what secures the cluster.
+
+**Defense in depth.** Three independent layers gate the API server: the allowlist governs *where from*, IAM governs *who*, Kubernetes RBAC governs *what*. Each is bypassable in isolation and none is sufficient alone.
+
+**Satisfies** NFR-20.
+
+### 2.3 Not Yet Decided
 
 - Kubernetes version and node AMI type
 - Instance type and node group sizing
-- Control plane endpoint access model (NFR-20)
 - Cluster secrets encryption key (NFR-21)
 - Cluster authentication mode — EKS access entries vs. `aws-auth` ConfigMap
+
+> **Flag for implementation.** The IAM principal that creates an EKS cluster is automatically granted cluster-admin. Terraform will create this cluster using the operator's SSO role, so that role receives full Kubernetes access with no explicit mapping. Every other principal requires one. Revisit when the authentication mode is decided.
 
 Not started.
 

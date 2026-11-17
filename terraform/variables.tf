@@ -31,3 +31,8 @@ variable "alert_email" {
   description = "Address that receives budget threshold alerts."
   type        = string
 }
+
+variable "operator_cidr" {
+  description = "Source CIDR permitted to reach the EKS public API endpoint."
+  type        = string
+}
