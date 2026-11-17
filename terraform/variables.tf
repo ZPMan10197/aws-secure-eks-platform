@@ -26,3 +26,8 @@ variable "az_count" {
     error_message = "NFR-1 requires the workload to span at least two Availability Zones."
   }
 }
+
+variable "alert_email" {
+  description = "Address that receives budget threshold alerts."
+  type        = string
+}
