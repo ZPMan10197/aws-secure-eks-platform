@@ -43,7 +43,8 @@ Requirements carry stable IDs (`FR-*`, `NFR-*`) so architecture decisions can ci
 | Architecture — network | Decided |
 | Architecture — compute, data, identity, detection | Not started |
 | Threat model | Not started |
-| Terraform | VPC and subnets created; gateways and routing in progress |
+| Terraform — network | Complete: VPC, subnets, IGW, NAT gateways, routing, cost budget |
+| Terraform — compute, data, identity, detection | Not started |
 | Control validation scenarios | Not started |
 
 ---
