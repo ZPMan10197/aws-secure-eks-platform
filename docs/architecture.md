@@ -88,6 +88,34 @@ Additionally, not every AZ in a region supports every service or instance type �
 
 ## 2. Compute
 
+### 2.1 Decision Record: Worker Node Provisioning
+
+**Decision.** EKS **managed node groups** on EC2, placed in the private subnets. Closes OQ-1.
+
+**Alternatives considered.**
+
+| Option | Rejected because |
+|---|---|
+| AWS Fargate for EKS | Removes node management, but provides no node instance role and no DaemonSet support. VS-2 demonstrates privilege escalation through an over-permissioned node role and its remediation via IRSA — on Fargate that failure mode does not exist, so the scenario cannot be built. DaemonSet support is also a precondition for most runtime security and log collection agents. |
+| Self-managed node groups | Equivalent capability, but moves AMI selection, bootstrap scripting, and upgrade orchestration onto the operator for no gain at this scale. |
+| Karpenter | The current standard for production autoscaling, but autoscaling is explicitly out of scope (requirements.md §3.2) and it introduces a controller, its own IAM surface, and provisioner CRDs. Adding it would be scope creep. |
+
+**Rationale.** The node instance role is a first-class subject of this platform's security story, not an implementation detail. Managed node groups also match the deployment model the rest of the architecture assumes — NFR-4 places worker nodes in private subnets with no public IP, which presumes nodes the operator owns.
+
+AWS retains responsibility for the control plane; the operator retains responsibility for node AMI version, security group, instance role, and upgrade cadence. That division is the one worth being able to articulate.
+
+**Cost.** EKS control plane bills $0.10/hour (~$73/month continuous) independent of node count. Worker nodes bill at standard EC2 rates. Under NFR-25 the environment is destroyed when idle.
+
+**Satisfies** NFR-4, NFR-9. **Enables** VS-2.
+
+### 2.2 Not Yet Decided
+
+- Kubernetes version and node AMI type
+- Instance type and node group sizing
+- Control plane endpoint access model (NFR-20)
+- Cluster secrets encryption key (NFR-21)
+- Cluster authentication mode — EKS access entries vs. `aws-auth` ConfigMap
+
 Not started.
 
 ## 3. Data
