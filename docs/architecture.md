@@ -130,16 +130,31 @@ AWS retains responsibility for the control plane; the operator retains responsib
 
 **Satisfies** NFR-20.
 
-### 2.3 Not Yet Decided
+### 2.3 Decision Record: Kubernetes Version and Node AMI
 
-- Kubernetes version and node AMI type
+**Decision.** Kubernetes **1.37** on **Amazon Linux 2023** worker nodes.
+
+**Version rationale.** 1.37 is the EKS default version, which AWS assigns only after a release has proven stable in the field, so the add-on and tooling immaturity that normally argues for trailing one release behind does not apply. It also carries the longest standard-support runway (ending 2027-11-30), avoiding both a forced upgrade and the extended-support price increase.
+
+**Support lifecycle and its cost.** EKS versions move through standard support (~14 months, $0.10/hour), extended support (a further 12 months, **$0.60/hour**), then forced upgrade. The 6x increase is deliberate: remaining on an unsupported version is priced to be more expensive than upgrading. Version currency is therefore a cost control, not only a security one.
+
+**AMI rationale.** Amazon Linux 2023 is the default for managed node groups and the dominant choice in production, so node-level controls demonstrated here — IMDSv2 enforcement, instance role scoping, patch cadence — transfer directly to real environments.
+
+**Alternative considered.**
+
+| Option | Rejected because |
+|---|---|
+| Bottlerocket | Materially more hardened: read-only root filesystem, no shell, no package manager, updates by immutable image swap, so container escape yields a far less useful host. Rejected here because the hardening is supplied by the image rather than demonstrated by the operator, and because debugging requires a separate admin container rather than familiar tooling. It would be the stronger choice for a production security-sensitive workload. |
+
+**Note.** AWS defaults optimize for compatibility and least surprise, not for security posture — the default security group, the default network ACL, and this AMI selection are all examples. "It is the default" is not a security justification.
+
+### 2.4 Not Yet Decided
+
 - Instance type and node group sizing
 - Cluster secrets encryption key (NFR-21)
 - Cluster authentication mode — EKS access entries vs. `aws-auth` ConfigMap
 
 > **Flag for implementation.** The IAM principal that creates an EKS cluster is automatically granted cluster-admin. Terraform will create this cluster using the operator's SSO role, so that role receives full Kubernetes access with no explicit mapping. Every other principal requires one. Revisit when the authentication mode is decided.
-
-Not started.
 
 ## 3. Data
 
