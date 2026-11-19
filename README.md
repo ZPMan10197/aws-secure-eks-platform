@@ -41,10 +41,12 @@ Requirements carry stable IDs (`FR-*`, `NFR-*`) so architecture decisions can ci
 |---|---|
 | Requirements specification | Complete |
 | Architecture — network | Decided |
-| Architecture — compute, data, identity, detection | Not started |
+| Architecture — compute | Decided (node remote access outstanding) |
+| Architecture — data, identity, detection | Not started |
 | Threat model | Not started |
 | Terraform — network | Complete: VPC, subnets, IGW, NAT gateways, routing, cost budget |
-| Terraform — compute, data, identity, detection | Not started |
+| Terraform — compute | EKS cluster and IAM role complete; node group not started |
+| Terraform — data, identity, detection | Not started |
 | Control validation scenarios | Not started |
 
 ---
