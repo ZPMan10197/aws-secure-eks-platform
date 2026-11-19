@@ -148,13 +148,49 @@ AWS retains responsibility for the control plane; the operator retains responsib
 
 **Note.** AWS defaults optimize for compatibility and least surprise, not for security posture — the default security group, the default network ACL, and this AMI selection are all examples. "It is the default" is not a security justification.
 
-### 2.4 Not Yet Decided
+### 2.4 Decision Record: Node Group Sizing
 
-- Instance type and node group sizing
-- Cluster secrets encryption key (NFR-21)
-- Cluster authentication mode — EKS access entries vs. `aws-auth` ConfigMap
+**Decision.** Two `t3.medium` nodes, one per Availability Zone. Minimum 2, maximum 2, desired 2.
 
-> **Flag for implementation.** The IAM principal that creates an EKS cluster is automatically granted cluster-admin. Terraform will create this cluster using the operator's SSO role, so that role receives full Kubernetes access with no explicit mapping. Every other principal requires one. Revisit when the authentication mode is decided.
+**Rationale.** Two nodes is the minimum that satisfies NFR-1 and NFR-3 — a single node means an AZ failure takes the workload with it. Autoscaling is out of scope (requirements.md §3.2), so minimum and maximum are pinned rather than left to range.
+
+`t3.medium` is selected on pod capacity rather than CPU. Pods per node is bounded by ENI limits, not compute: `t3.medium` allows 3 ENIs × 6 IPv4 addresses = 18, less one for the node itself = **17 pods**. Expected load is roughly four pods per node — two DaemonSets (`aws-node`, `kube-proxy`), plus CoreDNS and application replicas — so the ceiling is not approached. `t3.small` was rejected on memory headroom once kube-system DaemonSets are scheduled; `m5.large` pays for capacity that is not used.
+
+**Address consumption.** Two nodes claim roughly 34 addresses from a 4,091-address `/20`. The sizing in §1.4 is what makes this a non-issue.
+
+**Noted but not adopted.** VPC CNI prefix delegation raises per-node pod capacity by allocating `/28` prefixes to ENI slots rather than single addresses, lifting `t3.medium` past the Kubernetes default cap of 110 pods per node. It is the correct first remedy for pod-density pressure — before larger instances — but it allocates address space in whole blocks and requires contiguous `/28` ranges, trading instance cost for subnet fragmentation risk. Not needed at this scale.
+
+### 2.5 Decision Record: Secrets Encryption
+
+**Decision.** Kubernetes Secrets are encrypted with envelope encryption using a **customer-managed KMS key**.
+
+**Rationale.** EKS encrypts etcd with an AWS-owned key by default, which the account holder can neither inspect nor revoke. A customer-managed key adds a second layer: Kubernetes generates a data key per secret, KMS encrypts the data key, and both ciphertexts are stored in etcd. Reading etcd directly yields nothing usable.
+
+The operational properties are what matter: key usage is recorded in CloudTrail, the key policy is auditable, and revoking the key renders the secrets permanently unreadable — a containment control for a compromised cluster.
+
+**Cost.** $1/month per key plus request charges. The key persists through `terraform destroy`: KMS enforces a 7–30 day waiting period before deletion, so this is a small standing charge rather than a per-session one.
+
+**Satisfies** NFR-7, NFR-21.
+
+### 2.6 Decision Record: Cluster Authentication Mode
+
+**Decision.** EKS **access entries** (`API` authentication mode).
+
+**Alternative considered.**
+
+| Option | Rejected because |
+|---|---|
+| `aws-auth` ConfigMap | Stores IAM-to-Kubernetes mappings as a ConfigMap in `kube-system`. Because the data lives in etcd rather than behind an AWS API, changes are invisible to CloudTrail, cannot be restricted by IAM, and are not manageable as Terraform-tracked state. A malformed edit removes all administrative access with no AWS-side recovery path. AWS is migrating away from it. |
+
+**Rationale.** Access entries are a first-class AWS API: mappings are Terraform-managed resources, changes appear in CloudTrail, and access is governed by IAM rather than by who can edit a ConfigMap.
+
+**Bootstrap behavior.** The IAM principal that creates the cluster receives cluster-admin automatically through a bootstrap access entry. This platform is created by the operator's SSO role, so that role has full Kubernetes access without explicit configuration. Every other principal requires an explicit `aws_eks_access_entry`. This is convenient for a single operator and a real consideration in a team: cluster access can originate from who ran `terraform apply` rather than from declared policy.
+
+**Satisfies** NFR-11.
+
+### 2.7 Not Yet Decided
+
+- Node group remote access configuration (SSH key vs. SSM-only)
 
 ## 3. Data
 
